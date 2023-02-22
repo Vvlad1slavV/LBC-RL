@@ -23,14 +23,14 @@ def linear_schedule(initial_value: float) -> Callable[[float], float]:
     :return: schedule that computes
       current learning rate depending on remaining progress
     """
-    def func(progress_remaining: float) -> float:
+    def func(progress_remaining: float, min_value: float) -> float:
         """
         Progress will decrease from 1 (beginning) to 0.
 
         :param progress_remaining:
         :return: current learning rate
         """
-        return progress_remaining * initial_value
+        return max(progress_remaining * initial_value, min_value)
 
     return func
 
@@ -39,25 +39,21 @@ def wrapper(env):
     env = gnwrapper.Animation(env)
     return env
 
-if __name__ == "__main__":
-    print('a')
+if __name__ == "__main__":  
     env = make_vec_env(env_id, n_envs=NUM_CPU, wrapper_class=wrapper, vec_env_cls=SubprocVecEnv)
-    print('b')
     model = PPO("MlpPolicy",
             env,
             verbose=1,
             seed=0,
             batch_size=512,
-            learning_rate=linear_schedule(0.001),
+            learning_rate=linear_schedule(1e-3, 1e-5),
             n_epochs=10,
             n_steps=8*NUM_CPU,
             # clip_range=0.5,
             # use_sde=True,
            )
-    # try:
+    
     model.learn(total_timesteps=200_000, progress_bar=True)
-    # except Exception as e:
-        # print(e)
     env.close()
     model.save("./ppo_CarRacing_expert")
         
