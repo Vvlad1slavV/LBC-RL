@@ -46,11 +46,13 @@ def wrapper(env):
 def main(opt):
     env = make_vec_env(env_id, n_envs=NUM_CPU, wrapper_class=wrapper, vec_env_cls=SubprocVecEnv)
     
-    eval_callback = EvalCallback(env, 
-                             best_model_save_path= opt.log_prefix + "logs/best_model/" + opt.model_name,
-                             log_path= opt.log_prefix + "results/" + opt.model_name,
-                             eval_freq=500,
-                             deterministic=True, render=False)
+    eval_callback = None
+    if opt.eval_freq != 0:
+        eval_callback = EvalCallback(env,
+                                 best_model_save_path= opt.log_prefix + "logs/best_model/" + opt.model_name,
+                                 log_path= opt.log_prefix + "results/" + opt.model_name,
+                                 eval_freq=opt.eval_freq,
+                                 deterministic=True, render=False)
     
     model = PPO("MlpPolicy",
             env,
@@ -79,6 +81,7 @@ def parse_opt(known=False):
     parser.add_argument('--batch-size', type=int, default=512, help='total batch size for all GPUs')
     parser.add_argument('--model-name', type=str, default='expert', help='model name to save')
     parser.add_argument('--log-prefix', type=str, default='./', help='folder to save logs')
+    parser.add_argument('--eval-freq', type=int, default=0, help='')
     
     return parser.parse_known_args()[0] if known else parser.parse_args()    
     
