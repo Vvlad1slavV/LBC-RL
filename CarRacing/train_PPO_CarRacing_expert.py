@@ -11,10 +11,24 @@ from stable_baselines3.common.callbacks import EvalCallback
 
 import gnwrapper
 
-from CarRacing_utils import CarRacingGroundTruthObsWrapper
+from CarRacing_utils import CarRacingGroundTruthObsWrapper, CarRacingGroundTruthXYObsWrapper
 
 env_id = "CarRacing-v0"
 NUM_CPU = 16  # Number of processes to use
+
+obs_aliases = {
+    'DirectionObs': CarRacingGroundTruthObsWrapper,
+    'XYObs': CarRacingGroundTruthXYObsWrapper
+}
+
+
+def get_obswrapper_from_name(obswrapper_name: str):
+        if obswrapper_name in obs_aliases:
+            return obs_aliases[obswrapper_name]
+        else:
+            raise ValueError(f"Obs Wrapper {obswrapper_name} unknown")
+CarObsWrapper = None            
+            
 
 def linear_schedule(initial_value: float, min_value: float = 0.0) -> Callable[[float], float]:
     """
@@ -38,12 +52,17 @@ def linear_schedule(initial_value: float, min_value: float = 0.0) -> Callable[[f
     return func
 
 def wrapper(env):
-    env = CarRacingGroundTruthObsWrapper(env) 
+    global CarObsWrapper
+    env = CarObsWrapper(env) 
     env = gnwrapper.Animation(env)
     return env
 
 
 def main(opt):
+    global CarObsWrapper
+    print(f'Use {opt.wrapper_name} wrapper')
+    CarObsWrapper = get_obswrapper_from_name(opt.wrapper_name)
+    
     env = make_vec_env(env_id, n_envs=NUM_CPU, wrapper_class=wrapper, vec_env_cls=SubprocVecEnv)
     
     eval_callback = None
@@ -81,7 +100,8 @@ def parse_opt(known=False):
     parser.add_argument('--batch-size', type=int, default=512, help='total batch size for all GPUs')
     parser.add_argument('--model-name', type=str, default='expert', help='model name to save')
     parser.add_argument('--log-prefix', type=str, default='./', help='folder to save logs')
-    parser.add_argument('--eval-freq', type=int, default=0, help='')
+    parser.add_argument('--eval-freq', type=int, default=0, help='eval freq')
+    parser.add_argument('--wrapper-name', type=str, default='XYObs', help='Name of ObsWrapper')
     
     return parser.parse_known_args()[0] if known else parser.parse_args()    
     
