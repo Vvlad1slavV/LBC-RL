@@ -78,11 +78,13 @@ class CarRacingGroundTruthXYObsWrapper(gym.ObservationWrapper):
         
         return np.array([velocity, angular_velocity, *np.concatenate((path, path_angles), axis=0).ravel(order='F')])
 
-def linear_schedule(initial_value: float) -> Callable[[float], float]:
+def linear_schedule(initial_value: float, min_value: float = 0.0) -> Callable[[float], float]:
     """
     Linear learning rate schedule.
 
     :param initial_value: Initial learning rate.
+           min_value: Min learning rate.
+    
     :return: schedule that computes
       current learning rate depending on remaining progress
     """
@@ -93,6 +95,6 @@ def linear_schedule(initial_value: float) -> Callable[[float], float]:
         :param progress_remaining:
         :return: current learning rate
         """
-        return progress_remaining * initial_value
+        return max(progress_remaining * initial_value, min_value)
 
     return func
