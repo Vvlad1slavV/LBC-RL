@@ -2,7 +2,7 @@ import gym
 import numpy as np
 
 class MountainCarContinuousObsWrapper(gym.ObservationWrapper):
-    def __init__(self, env, num_obs_points: int = 6):
+    def __init__(self, env):
         super().__init__(env)
         self.max_angle = 1
         
