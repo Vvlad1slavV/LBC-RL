@@ -6,7 +6,7 @@ import argparse
 import numpy as np
 import gym
 
-from stable_baselines3 import PPO
+from sb3_contrib import RecurrentPPO
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.env_util import make_vec_env
@@ -16,12 +16,12 @@ from stable_baselines3.common.results_plotter import load_results, ts2xy
 
 import gnwrapper
 
-from MountainCar_utils import MountainCarContinuousObsWrapper
+from MountainCar_utils import MountainCarContinuousNoVelObsWrapper
 
 env_id = "MountainCarContinuous-v0"
 
 def wrapper(env):
-    env = MountainCarContinuousObsWrapper(env) 
+    env = MountainCarContinuousNoVelObsWrapper(env) 
     return env
 
 class SaveOnBestTrainingRewardCallback(BaseCallback):
@@ -94,15 +94,10 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
 
 def main(opt):
    
-    if opt.novel:
-        env = make_vec_env(env_id,
+    env = make_vec_env(env_id,
                        n_envs = opt.num_cpu,
                        wrapper_class = wrapper,
                        monitor_dir = opt.log_prefix + f"logs/{opt.model_name}_monitor/")
-    else:
-        env = make_vec_env(env_id,
-               n_envs = opt.num_cpu,
-               monitor_dir = opt.log_prefix + f"logs/{opt.model_name}_monitor/")
     
     callback_list = []
     callback_list.append(SaveOnBestTrainingRewardCallback(128,
@@ -117,7 +112,7 @@ def main(opt):
                                  eval_freq=opt.eval_freq,
                                  deterministic=True, render=False))
     
-    model = PPO("MlpPolicy",
+    model = RecurrentPPO("MlpLstmPolicy",
             env,
             verbose=1,
             seed=opt.seed,
@@ -129,6 +124,8 @@ def main(opt):
             gamma=0.9999,
             max_grad_norm=5,
             use_sde=opt.sde,
+            # sde_sample_freq = 64,
+            policy_kwargs = dict(ortho_init=False, lstm_hidden_size=32),
             tensorboard_log = opt.log_prefix + f"logs/{opt.model_name}_tensorboard/",
            )
 
@@ -137,17 +134,15 @@ def main(opt):
     model.save(opt.log_prefix + opt.model_name)
         
     del model
-    
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=0, help='Global training seed')
     parser.add_argument('--learning-rate', type=float, default=7.77e-05, help='Label smoothing epsilon')
     parser.add_argument('--sde', action=argparse.BooleanOptionalAction)
-    parser.add_argument('--novel', action=argparse.BooleanOptionalAction)
-    parser.add_argument('--total-timesteps', type=int, default=1_000_000, help='model.learn total_timesteps')
-    parser.add_argument('--batch-size', type=int, default=512, help='total batch size for all GPUs')
-    parser.add_argument('--n-step', type=int, default=256, help='PPO n_steps')
+    parser.add_argument('--total-timesteps', type=int, default=300_000, help='model.learn total_timesteps')
+    parser.add_argument('--batch-size', type=int, default=256, help='total batch size for all GPUs')
+    parser.add_argument('--n-step', type=int, default=1024, help='PPO n_steps')
     parser.add_argument('--model-name', type=str, default='expert', help='model name to save')
     parser.add_argument('--log-prefix', type=str, default='./', help='folder to save logs')
     parser.add_argument('--eval-freq', type=int, default=0, help='eval freq')
