@@ -8,7 +8,7 @@ import gym
 
 from stable_baselines3 import PPO
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
+from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv, VecFrameStack
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback
 from stable_baselines3.common.callbacks import BaseCallback
@@ -16,12 +16,12 @@ from stable_baselines3.common.results_plotter import load_results, ts2xy
 
 import gnwrapper
 
-from MountainCar_utils import MountainCarContinuousObsWrapper
+from MountainCar_utils import MountainCarContinuousNoVelObsWrapper
 
 env_id = "MountainCarContinuous-v0"
 
 def wrapper(env):
-    env = MountainCarContinuousObsWrapper(env) 
+    env = MountainCarContinuousNoVelObsWrapper(env) 
     return env
 
 class SaveOnBestTrainingRewardCallback(BaseCallback):
@@ -103,6 +103,8 @@ def main(opt):
         env = make_vec_env(env_id,
                n_envs = opt.num_cpu,
                monitor_dir = opt.log_prefix + f"logs/{opt.model_name}_monitor/")
+    if opt.frame_stack_size != 0:
+        env = VecFrameStack(env, opt.frame_stack_size)
     
     callback_list = []
     callback_list.append(SaveOnBestTrainingRewardCallback(128,
@@ -145,6 +147,7 @@ def parse_opt(known=False):
     parser.add_argument('--learning-rate', type=float, default=7.77e-05, help='Label smoothing epsilon')
     parser.add_argument('--sde', action=argparse.BooleanOptionalAction)
     parser.add_argument('--novel', action=argparse.BooleanOptionalAction)
+    parser.add_argument('--frame-stack-size', type=int, default=0, help='Num vec frame stack')
     parser.add_argument('--total-timesteps', type=int, default=1_000_000, help='model.learn total_timesteps')
     parser.add_argument('--batch-size', type=int, default=512, help='total batch size for all GPUs')
     parser.add_argument('--n-step', type=int, default=256, help='PPO n_steps')
