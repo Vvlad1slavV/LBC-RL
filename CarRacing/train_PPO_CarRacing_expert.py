@@ -17,7 +17,7 @@ from stable_baselines3.common.results_plotter import load_results, ts2xy
 import gnwrapper
 
 from CarRacing_utils import CarRacingGroundTruthObsWrapper, CarRacingGroundTruthXYObsWrapper
-from CarRacing_utils import linear_schedule
+from CarRacing_utils import linear_schedule, linear_rectified_schedule
 
 env_id = "CarRacing-v0"
 
@@ -58,9 +58,11 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
         self.model_name = model_name
         self.mean_reward = -np.inf
         self.rew_results = []
+        self.mean_reward_ncpu = []
+        self.rew_timesteps_ncpu = []
         self.rew_timesteps = []
         self.rew_length = [] # get from ep_info_buffer
-
+    
         self.ep_len = 0
         self.mean_ep_num = 0
 
@@ -77,6 +79,16 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
             if len(x) > 0:
                 # Mean training reward over the last cpu_num episodes
                 ep_len = len(y)
+                
+                mean_reward_ncpu = np.mean(y[-self.num_cpu:])
+                self.mean_reward_ncpu.append(mean_reward_ncpu)
+                self.rew_timesteps_ncpu.append(self.num_timesteps)
+                self.logger.record("rollout/mean_reward_ncpu", mean_reward_ncpu)
+                np.savez(self.model_name+'_ncpu',
+                         timesteps=self.rew_timesteps_ncpu,
+                         results=self.mean_reward_ncpu,
+                         ep_lengths=self.rew_length)
+                
                 if self.ep_len != ep_len:
                     self.logger.record("rollout/mean_reward_step", np.mean(y[self.ep_len-ep_len:]))
                     self.ep_len = ep_len
@@ -102,6 +114,7 @@ def main(opt):
     
     env = make_vec_env(env_id,
                        n_envs = opt.num_cpu,
+                       env_kwargs = { 'verbose': False },
                        wrapper_class = wrapper,
                        monitor_dir = opt.log_prefix + f"logs/{opt.model_name}_monitor/",
                        vec_env_cls = SubprocVecEnv)
@@ -120,7 +133,11 @@ def main(opt):
             verbose=1,
             seed=opt.seed,
             batch_size=opt.batch_size,
-            learning_rate=linear_schedule(opt.learning_rate, opt.min_learning_rate),
+            # learning_rate=linear_schedule(opt.learning_rate, opt.min_learning_rate),
+            learning_rate=linear_rectified_schedule(opt.learning_rate,
+                                                    opt.min_learning_rate,
+                                                    total_timesteps=opt.total_timesteps,
+                                                    rectified_timesteps=opt.rectified_timesteps),
             n_epochs=10,
             n_steps=opt.n_step,
             # clip_range=0.5,
@@ -144,6 +161,7 @@ def parse_opt(known=False):
     parser.add_argument('--min-learning-rate', type=float, default=1e-4, help='Label smoothing epsilon')
     parser.add_argument('--sde', action=argparse.BooleanOptionalAction)
     parser.add_argument('--total-timesteps', type=int, default=200_000, help='model.learn total_timesteps')
+    parser.add_argument('--rectified-timesteps', type=int, default=100_000, help='model.learn total_timesteps')
     parser.add_argument('--batch-size', type=int, default=128, help='total batch size for all GPUs')
     parser.add_argument('--n-step', type=int, default=64, help='PPO n_steps')
     parser.add_argument('--model-name', type=str, default='expert', help='model name to save')
