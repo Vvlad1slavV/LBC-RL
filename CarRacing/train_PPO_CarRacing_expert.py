@@ -1,12 +1,10 @@
 import os
-from collections import deque
 import argparse
 
 import numpy as np
 import gym
 
 from stable_baselines3 import PPO
-from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.vec_env import DummyVecEnv, SubprocVecEnv
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback, CheckpointCallback
@@ -17,7 +15,7 @@ from CarRacing_utils.observation_wrapper import CarRacingGroundTruthObsWrapper, 
 from CarRacing_utils.schedules import linear_schedule, linear_rectified_schedule
 from CarRacing_utils.callbacks import SaveOnBestTrainingRewardCallback
 
-env_id = "CarRacing-v0"
+ENV_ID = "CarRacing-v0"
 
 obs_aliases = {
     'DirectionObs': CarRacingGroundTruthObsWrapper,
@@ -40,12 +38,12 @@ def carracing_wrapper(obs_wrapper):
 
 def main(opt):
     print(f'Use {opt.wrapper_name} wrapper')
-    CarObsWrapper = get_obswrapper_from_name(opt.wrapper_name)
+    car_obs_wrapper = get_obswrapper_from_name(opt.wrapper_name)
 
-    env = make_vec_env(env_id,
+    env = make_vec_env(ENV_ID,
                        n_envs = opt.num_cpu,
                        env_kwargs = { 'verbose': False },
-                       wrapper_class = carracing_wrapper(CarObsWrapper),
+                       wrapper_class = carracing_wrapper(car_obs_wrapper),
                        monitor_dir = opt.log_prefix + f"logs/{opt.model_name}_monitor/",
                        vec_env_cls = SubprocVecEnv)
     callback_list = []
