@@ -67,7 +67,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                 self.mean_reward_ncpu.append(mean_reward_ncpu)
                 self.rew_timesteps_ncpu.append(self.num_timesteps)
                 self.logger.record("rollout/mean_reward_ncpu", mean_reward_ncpu)
-                np.savez(self.model_save_path + self.model_name + '_ncpu',
+                np.savez(self.model_save_path + 'rewards_ncpu',
                          timesteps=self.rew_timesteps_ncpu,
                          results=self.mean_reward_ncpu,
                          ep_lengths=self.rew_length)
@@ -87,7 +87,7 @@ class SaveOnBestTrainingRewardCallback(BaseCallback):
                         self.logger.record("rollout/mean_reward", mean_reward)
                         self.rew_results.append(mean_reward)
                         self.rew_timesteps.append(self.num_timesteps)
-                        np.savez(self.model_save_path + self.model_name,
+                        np.savez(self.model_save_path + 'rewards',
                                  timesteps=self.rew_timesteps,
                                  results=self.rew_results,
                                  ep_lengths=self.rew_length)
