@@ -74,12 +74,16 @@ def parse_opt(known=False):
     parser.add_argument('--seed', type=int, default=0, help='Global training seed')
     parser.add_argument('--learning-rate', type=float, default=7.77e-05, help='Label smoothing epsilon')
     parser.add_argument('--sde', action=argparse.BooleanOptionalAction)
-    parser.add_argument('--total-timesteps', type=int, default=300_000, help='model.learn total_timesteps')
+    parser.add_argument('--total-timesteps', type=int, default=1_000_000, help='model.learn total_timesteps')
     parser.add_argument('--batch-size', type=int, default=256, help='total batch size for all GPUs')
     parser.add_argument('--n-step', type=int, default=1024, help='PPO n_steps')
+
+    parser.add_argument('--eval-freq', type=int, default=0, help='eval freq')
+
     parser.add_argument('--model-name', type=str, default='expert', help='model name to save')
     parser.add_argument('--log-prefix', type=str, default='./', help='folder to save logs')
-    parser.add_argument('--eval-freq', type=int, default=0, help='eval freq')
+    parser.add_argument('--model-num-saves', type=int, default=10, help='Num of save')
+
     parser.add_argument('--num-cpu', type=int, default=32, help='Num cpu')
 
     return parser.parse_known_args()[0] if known else parser.parse_args()    
