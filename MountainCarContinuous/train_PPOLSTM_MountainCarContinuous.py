@@ -1,7 +1,6 @@
 import argparse
 
-from stable_baselines3 import PPO
-from stable_baselines3.common.vec_env import VecFrameStack
+from sb3_contrib import RecurrentPPO
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.callbacks import EvalCallback, CheckpointCallback
 
@@ -11,24 +10,16 @@ from MountainCar_utils.callbacks import SaveOnBestTrainingRewardCallback
 ENV_ID = "MountainCarContinuous-v0"
 
 def wrapper(env):
-    env = MountainCarContinuousNoVelObsWrapper(env)
+    env = MountainCarContinuousNoVelObsWrapper(env) 
     return env
 
 def main(opt):
-    if opt.novel:
-        env = make_vec_env(ENV_ID,
+    env = make_vec_env(ENV_ID,
                        n_envs = opt.num_cpu,
                        wrapper_class = wrapper,
                        monitor_dir = opt.log_prefix + f"logs/{opt.model_name}_monitor/")
-    else:
-        env = make_vec_env(ENV_ID,
-               n_envs = opt.num_cpu,
-               monitor_dir = opt.log_prefix + f"logs/{opt.model_name}_monitor/")
-    if opt.frame_stack_size != 0:
-        env = VecFrameStack(env, opt.frame_stack_size)
 
     callback_list = []
-
     if opt.model_num_saves != 0:
         callback_list.append(CheckpointCallback(
             save_freq = opt.total_timesteps // opt.model_num_saves // opt.num_cpu,
@@ -55,7 +46,7 @@ def main(opt):
                             deterministic=True,
                             render=False))
     
-    model = PPO("MlpPolicy",
+    model = RecurrentPPO("MlpLstmPolicy",
             env,
             verbose=1,
             seed=opt.seed,
@@ -67,37 +58,36 @@ def main(opt):
             gamma=0.9999,
             max_grad_norm=5,
             use_sde=opt.sde,
+            # sde_sample_freq = 64,
+            policy_kwargs = dict(ortho_init=False, lstm_hidden_size=32),
             tensorboard_log = opt.log_prefix + f"logs/{opt.model_name}_tensorboard/",
            )
 
     model.learn(total_timesteps=opt.total_timesteps, callback=callback_list, progress_bar=True)
     env.close()
     model.save(opt.log_prefix + opt.model_name)
-        
+
     del model
-    
 
 def parse_opt(known=False):
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=0, help='Global training seed')
     parser.add_argument('--learning-rate', type=float, default=7.77e-05, help='Label smoothing epsilon')
     parser.add_argument('--sde', action=argparse.BooleanOptionalAction)
-    parser.add_argument('--novel', action=argparse.BooleanOptionalAction)
-    parser.add_argument('--frame-stack-size', type=int, default=0, help='Num vec frame stack')
     parser.add_argument('--total-timesteps', type=int, default=1_000_000, help='model.learn total_timesteps')
-    parser.add_argument('--batch-size', type=int, default=512, help='total batch size for all GPUs')
-    parser.add_argument('--n-step', type=int, default=256, help='PPO n_steps')
+    parser.add_argument('--batch-size', type=int, default=256, help='total batch size for all GPUs')
+    parser.add_argument('--n-step', type=int, default=1024, help='PPO n_steps')
 
     parser.add_argument('--eval-freq', type=int, default=0, help='eval freq')
 
-    parser.add_argument('--model-name', type=str, default='noob', help='model name to save')
+    parser.add_argument('--model-name', type=str, default='expert', help='model name to save')
     parser.add_argument('--log-prefix', type=str, default='./', help='folder to save logs')
     parser.add_argument('--model-num-saves', type=int, default=10, help='Num of save')
 
     parser.add_argument('--num-cpu', type=int, default=32, help='Num cpu')
 
-    return parser.parse_known_args()[0] if known else parser.parse_args()
-    
+    return parser.parse_known_args()[0] if known else parser.parse_args()    
+
 def run(**kwargs):
     # Usage: import train; train.run(data='coco128.yaml', imgsz=320, weights='yolov5m.pt')
     opt = parse_opt(True)
