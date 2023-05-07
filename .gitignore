@@ -1,5 +1,6 @@
 logs
 .ipynb_checkpoints/
 *.zip
+__pycache__
 
 Compare
