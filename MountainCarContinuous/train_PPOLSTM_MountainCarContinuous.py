@@ -40,7 +40,7 @@ def main(opt):
     if opt.eval_freq != 0:
         callback_list.append(EvalCallback(env,
                             best_model_save_path= opt.log_prefix + "logs/best_model/" + opt.model_name,
-                            # n_eval_episodes = 1,
+                            n_eval_episodes = 10,
                             log_path= opt.log_prefix + "results/" + opt.model_name,
                             eval_freq=opt.eval_freq,
                             deterministic=True,

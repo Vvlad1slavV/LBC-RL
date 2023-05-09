@@ -7,23 +7,23 @@ from stable_baselines3.common.callbacks import EvalCallback, CheckpointCallback
 
 from MountainCar_utils.observation_wrapper import MountainCarContinuousNoVelObsWrapper
 from MountainCar_utils.callbacks import SaveOnBestTrainingRewardCallback
+from MountainCar_utils.tcn_extractor import TCNExtractor
 
 ENV_ID = "MountainCarContinuous-v0"
 
-def wrapper(env):
-    env = MountainCarContinuousNoVelObsWrapper(env)
-    return env
-
 def main(opt):
     if opt.novel:
-        env = make_vec_env(ENV_ID,
-                       n_envs = opt.num_cpu,
-                       wrapper_class = wrapper,
-                       monitor_dir = opt.log_prefix + f"logs/{opt.model_name}_monitor/")
+        wrapper = MountainCarContinuousNoVelObsWrapper
+        input_size = 1
     else:
-        env = make_vec_env(ENV_ID,
-               n_envs = opt.num_cpu,
-               monitor_dir = opt.log_prefix + f"logs/{opt.model_name}_monitor/")
+        wrapper = None
+        input_size = 2
+        
+    env = make_vec_env(ENV_ID,
+                   n_envs = opt.num_cpu,
+                   wrapper_class = wrapper,
+                   monitor_dir = opt.log_prefix + f"logs/{opt.model_name}_monitor/")
+
     if opt.frame_stack_size != 0:
         env = VecFrameStack(env, opt.frame_stack_size)
 
@@ -54,7 +54,10 @@ def main(opt):
                             eval_freq=opt.eval_freq,
                             deterministic=True,
                             render=False))
-    
+    policy_kwargs = dict(
+        features_extractor_class=TCNExtractor,
+        features_extractor_kwargs=dict(input_size = input_size)
+    )
     model = PPO("MlpPolicy",
             env,
             verbose=1,
@@ -68,6 +71,7 @@ def main(opt):
             max_grad_norm=5,
             use_sde=opt.sde,
             tensorboard_log = opt.log_prefix + f"logs/{opt.model_name}_tensorboard/",
+            policy_kwargs=policy_kwargs,
            )
 
     model.learn(total_timesteps=opt.total_timesteps, callback=callback_list, progress_bar=True)
@@ -90,7 +94,7 @@ def parse_opt(known=False):
 
     parser.add_argument('--eval-freq', type=int, default=0, help='eval freq')
 
-    parser.add_argument('--model-name', type=str, default='noob', help='model name to save')
+    parser.add_argument('--model-name', type=str, default='tcn_model', help='model name to save')
     parser.add_argument('--log-prefix', type=str, default='./', help='folder to save logs')
     parser.add_argument('--model-num-saves', type=int, default=10, help='Num of save')
 
