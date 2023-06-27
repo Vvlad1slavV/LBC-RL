@@ -1,8 +1,6 @@
 # LBC-RL 
 Learning-by-cheating Reinforcement Learning
 
-
-
 Project inspired by articles of [Robotics and Perception Group, University of Zurich](https://rpg.ifi.uzh.ch/index.html):
 
 1. [Learning Quadrupedal Locomotion over Challenging Terrain](https://leggedrobotics.github.io/rl-blindloco/)
@@ -23,6 +21,8 @@ Adding privileged information should help teacher policy find good action.
 
 <img src="https://gymnasium.farama.org/_images/car_racing.gif" width="600"> 
 
-## ITMObotics
+## [ITMObotics](ITMObotics/README.md)
+
+<img src="https://raw.githubusercontent.com/ITMORobotics/itmobotics_sim/develop/assets/sim.png" width="600">
 
 comming soon
