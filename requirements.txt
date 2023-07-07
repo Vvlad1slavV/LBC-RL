@@ -1,3 +1,4 @@
 ipywidgets
 stable_baselines3[extra]
 gym-notebook-wrapper
+itmobotics_gym @ git+https://github.com/ITMORobotics/itmobotics_gym@develop
