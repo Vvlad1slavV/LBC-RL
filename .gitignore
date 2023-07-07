@@ -1,3 +1,4 @@
+.vscode
 logs
 .ipynb_checkpoints/
 *.zip
