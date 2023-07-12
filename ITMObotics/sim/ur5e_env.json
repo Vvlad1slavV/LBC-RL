@@ -1,0 +1,71 @@
+{
+    "robot":{
+        "name": "robot",
+        "urdf_filename": "ur5e_pybullet.urdf",
+        "mount_tf": [0.0, 0.0, 0.625, 0.0, 0.0, 0.0],
+        "init_state": {
+            "type": "joint_positions",
+            "value": [1.5708, -1.2472, -1.5708, -1.8944,  1.5708,  0.0]
+        },
+        "action_space": {
+            "type":"ee_twist",
+            "reference_link": "base_link",
+            "target_link": "tool0",
+            "range_min": [-0.1,  -0.1, -0.1, -0.1, -0.1, -0.1],
+            "range_max": [0.1,  0.1, 0.1, 0.1, 0.1, 0.1]
+        },
+        "observation_space": {
+            "type_list":[
+                {
+                    "type": "cart_tf",
+                    "target_link": "camera_link",
+                    "target_model": "robot"
+                },
+                {
+                    "type": "cart_force_torque",
+                    "target_link": "peg_link",
+                    "target_model": "robot",
+                    "reference_model": "hole",
+                    "reference_link": "hole_target_link"
+                }
+            ]
+        },
+        "tool":{
+            "name": "peg_round",
+            "root_link": "ee_tool",
+            "urdf_filename": "peg_round.urdf",
+            "mount_tf": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        }
+    },
+    
+    "world":{
+        "world_objects":{
+            "table":{
+                "urdf_filename": "table.urdf",
+                "init_tf": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                "save": true
+            },
+            "hole":{
+                "urdf_filename": "hole_round.urdf",
+                "init_tf": [0.3, 0.1, 0.625, 0.0, 0.0, 0.0],
+                "random_tf_variation": [0.05, 0.05, 0.0, 0.0],
+                "save": false
+            }
+        }
+    },
+    "simulation": {
+        "gui": true,
+        "render": {
+            "view_cam_tf": [0, 0, 5.0, 0, 3.14, 0.0],
+            "resolution": [1024, 1024],
+            "fov": 1000.0
+        }
+    },
+    
+    "task": {
+        "termination":{
+            "max_time": 10.0
+        },
+        "control_loop_dt": 0.02
+    }
+}
