@@ -4,3 +4,4 @@ logs
 *.zip
 __pycache__
 Compare/
+*.pkl
